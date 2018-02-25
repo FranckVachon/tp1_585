@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Collections.Concurrent;
 
 namespace IFT585_TP1
@@ -12,10 +13,10 @@ namespace IFT585_TP1
 
         public CouchePhysique(Signal signal, CoucheMAC A2, CoucheMAC B2)
         {
-            this.m_A2StreamIn = A2.PhysiqueStreamOut;
-            this.m_A2StreamOut = A2.PhysiqueStreamIn;
-            this.m_B2StreamIn = B2.PhysiqueStreamOut;
-            this.m_B2StreamOut = B2.PhysiqueStreamIn;
+            m_A2StreamIn = A2.PhysiqueStreamOut;
+            m_A2StreamOut = A2.PhysiqueStreamIn;
+            m_B2StreamIn = B2.PhysiqueStreamOut;
+            m_B2StreamOut = B2.PhysiqueStreamIn;
         }
 
         public void Run()
@@ -30,6 +31,9 @@ namespace IFT585_TP1
                     // TO DO : Faire les perturbations de la couche physique
 
                     m_B2StreamOut.Add(completeFrame);
+                    //Logging
+                    string log_str = "streamout from T=" + Thread.CurrentThread.Name + " for frame: " + completeFrame.ToString();
+                    Logging.log(TypeConsolePrint.SendingPath, log_str);
                 }
 
 
@@ -40,6 +44,9 @@ namespace IFT585_TP1
                     // TO DO : Faire les perturbations de la couche physique
 
                     m_A2StreamOut.Add(completeFrame);
+                    //Logging
+                    string log_str = "streamout from T=" + Thread.CurrentThread.Name + " for frame: " + completeFrame.ToString();
+                    Logging.log(TypeConsolePrint.SendingPath, log_str);
                 }
             }
         }

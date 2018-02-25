@@ -40,7 +40,7 @@ namespace IFT585_TP1
             {
                 this.m_evenementStream = evenements;
                 //Paquets_in? How do we know at the instantiation
-                this.m_paquetsIn = paquetsIn;          
+                this.m_paquetsIn = paquetsIn;
                 this.m_paquetsOut = paquetsOut;     //input file read from disk goes here, e.g. paquet "waiting to go out"
                 this.m_path = path;
                 this.m_estActive = false;
@@ -59,12 +59,20 @@ namespace IFT585_TP1
                     this.m_thread.Join();
             }
 
+            public void ecrire_paquet()
+            {
+                /*Not ideal - Rez should probably be a class of its own?
+                Because it needs a run() to check for new stuff, no?*/
+                _ecrireFichier();
+            }
+
             private void _lireFichier()
             {
+
                 using (FileStream fs = File.OpenRead(m_path))
                 {
                     int nbOctetsALire = (int)fs.Length;
-
+             
                     while (nbOctetsALire > 0)
                     {
                         if (!m_estActive)
@@ -90,7 +98,50 @@ namespace IFT585_TP1
                         }
                     }
                 }
+
+                //log stuff
+                string log_str = "_lireFichier T=" + Thread.CurrentThread.Name + " content from file: " + Environment.NewLine;
+                foreach (Paquet p in m_paquetsOut)
+                {
+                    log_str += p.ToString() +Environment.NewLine;
+                }
+
+                Logging.log(TypeConsolePrint.SendingPath, log_str);
+
                 Terminer();
+            }
+            
+            private void _ecrireFichier() {
+
+                try
+                {
+                    //Paquet p = m_paquetsIn.Take();
+                    //File.WriteAllBytes(m_path, p.Buffer);
+
+                    //log stuff
+                    string log_str = "_ecrireFichier T=" + Thread.CurrentThread.Name + " content to write: " + Environment.NewLine;
+                    foreach (Paquet pA in m_paquetsIn)
+                    {
+                        log_str += pA.ToString() + Environment.NewLine;
+                    }
+
+                    Logging.log(TypeConsolePrint.ReceptionPath, log_str);
+                    Paquet p = m_paquetsIn.Take();
+                    using (var fs = new FileStream(m_path, FileMode.Append, FileAccess.Write))
+                    {
+                        fs.Write(p.Buffer,0,Convert.ToInt32(p.Taille));
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception _ecrireFichier from Thread.Name {0} for Paquet {1},", Thread.CurrentThread.Name, m_paquetsIn.ToString());
+                    Console.WriteLine("except {0}", ex);
+                    throw ex;
+                }
+
+
+
             }
         }
 
@@ -286,46 +337,34 @@ namespace IFT585_TP1
             //We do have bytes in paquet after this
             paquet = this.m_reseauStreamIn.Take();
 
-            if (Constants.print_configuration==TypeConsolePrint.All
-                || Constants.print_configuration == TypeConsolePrint.SendingPath)
-            {
-                Console.WriteLine("_versCoucheReseau from Thread.Name {0} for Paquet {1},", Thread.CurrentThread.Name, paquet.ToString());
-            }
+            string log_str = "_versCoucheReseau from Thread.Name: " + Thread.CurrentThread.Name + " paquets to write: " + paquet.ToString();
+            Logging.log(TypeConsolePrint.SendingPath, log_str);
 
         }
 
         private void _origineCouchePhysique(out Trame trame)
         {
             trame = this.m_MACStreamIn.Take();
-
-            if (Constants.print_configuration == TypeConsolePrint.All
-                || Constants.print_configuration == TypeConsolePrint.ReceptionPath)
-            {
-                Console.WriteLine("_origineCouchePhysique from Thread.Name {0} for noTrame {1},", Thread.CurrentThread.Name, trame.NoSequence);
-            }
+            string log_str = "_origineCouchePhysique from Thread.Name: " + Thread.CurrentThread.Name + " for noTrame: " + trame.ToString();
+            Logging.log(TypeConsolePrint.ReceptionPath, log_str);
         }
 
         private void _versCoucheReseau(Paquet paquet)
         {
-
-            if (Constants.print_configuration == TypeConsolePrint.All
-                || Constants.print_configuration == TypeConsolePrint.ReceptionPath)
-            {
-                Console.WriteLine("_versCoucheReseau from Thread.Name {0} for Paquet {1},", Thread.CurrentThread.Name, paquet.ToString());
-            }
+            string log_str = "_versCoucheReseau from Thread.Name: " + Thread.CurrentThread.Name + " paquets to write: " + paquet.ToString();
+            Logging.log(TypeConsolePrint.ReceptionPath, log_str);
 
             m_reseauStreamOut.Add(paquet);
-            m_evenementStream.Add(TypeEvenement.CoucheReseauPrete);
+            m_eventStream.Add(TypeEvenement.PaquetRecu);
 
         }
 
         private void _versCouchePhysique(Trame trame) 
         {
-            if (Constants.print_configuration == TypeConsolePrint.All
-                || Constants.print_configuration == TypeConsolePrint.SendingPath)
-            {
-                Console.WriteLine("_versCouchePhysique from Thread.Name {0} for noTrame {1},", Thread.CurrentThread.Name, trame.NoSequence);
-            }
+
+            string log_str = "_versCouchePhysique from Thread.Name: " + Thread.CurrentThread.Name + " for noTrame: " + trame.ToString();
+            Logging.log(TypeConsolePrint.SendingPath, log_str);
+
             m_MACStreamOut.Add(trame);
         }
 
@@ -336,17 +375,20 @@ namespace IFT585_TP1
         {
             return ((a <= b) && (b < c)) || ((c < a) && (a <= b)) || ((b < c) && (c < a));
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="typeTrame"></param>
+        /// <param name="noTrame"></param>/
+        /// <param name="noTrameAttendue"></param>
+        /// <param name="tampon"></param>
         /* 
          * Construction et envoie d'une trame de données ou d'une trame ACK ou NAK 
          */
         private void _envoyerTrame(TypeTrame typeTrame, uint noTrame, uint noTrameAttendue, Paquet[] tampon)
         {
-            if (Constants.print_configuration == TypeConsolePrint.All
-                || Constants.print_configuration == TypeConsolePrint.SendingPath)
-            {
-                Console.WriteLine("_envoyerTrame from Thread.Name {0} for noTrame {1},", Thread.CurrentThread.Name, noTrame);
-            }
+            /*Preparation de la trame a envoyer*/
+
             Trame s = new Trame();    /* variable scratch */
 
             /* Préparer la trame */
@@ -372,17 +414,19 @@ namespace IFT585_TP1
                 this.m_chrono.PartirChrono(noTrame);
 
             this.m_ackTimer.StopACKTimer();
+
+            //Logging
+            string log_str = "_envoyerTrame from Thread.Name: " + Thread.CurrentThread.Name + " for noTrame: " + s.ToString();
+            Logging.log(TypeConsolePrint.SendingPath, log_str);
         }
 
         private TypeEvenement _attendreEvenement()
         {
             TypeEvenement evenement = m_eventStream.Take();
 
-            if (Constants.print_configuration == TypeConsolePrint.All
-                || Constants.print_configuration == TypeConsolePrint.SendingPath)
-            {
-                Console.WriteLine("evenement from Thread.Name {0}: {1},", Thread.CurrentThread.Name, evenement.ToString());
-            }
+            string log_str = "evenement from Thread.Name: " + Thread.CurrentThread.Name + " for eventname: " + evenement.ToString();
+            Logging.log(TypeConsolePrint.Event, log_str);
+
             return evenement;
         }
 
@@ -414,6 +458,7 @@ namespace IFT585_TP1
             nbTampons = 0;
             for (index = 0; index < Constants.NB_BUFS; index++) estArrive[index] = false;
 
+            //TO DO: is this signal ever turned off? Maybe this is why I get multiple times the same file at the end?
             while (!this.m_signal.IsComplete)
             {
                 evenement = _attendreEvenement();
@@ -492,6 +537,12 @@ namespace IFT585_TP1
                         /* Timer ACK expiré => Enovie ACK */
                         _envoyerTrame(TypeTrame.ack, 0, trameAttendue, outTampon);
                         break;
+
+                    case TypeEvenement.PaquetRecu:
+                        /* Have a package - send that to Couche Reseau */
+                        m_coucheReseau.ecrire_paquet();
+                        break;
+                        
                 }
 
                 if (nbTampons < Constants.NB_BUFS)

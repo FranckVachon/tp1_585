@@ -122,6 +122,8 @@ namespace IFT585_TP1
             //Console.WriteLine("Quel est l'emplacemenet pour la copie du fichier?");
             //param.emplacementCopie = Console.ReadLine();
 
+            //Easiser to follow stuff than on console
+            Logging.createLogFile();
 
             //I'm not sure we need one collection all the collections?
             tramesA1_A2 = new BlockingCollection<Trame>();
@@ -153,7 +155,7 @@ namespace IFT585_TP1
 
             /*init A1, B1. This creates their CoucheReseau essentially. Let's suppose A1 sends (is_receiving=false) and B1 receives...*/
             A1.Initialiser(param.emplacementACopier, is_active:false);
-            B1.Initialiser(param.emplacementACopier, is_active:true);
+            B1.Initialiser(param.emplacementCopie, is_active:true);
             Thread threadA1 = new Thread(A1.Run);
             Thread threadA2 = new Thread(A2.Run);
             Thread threadB1 = new Thread(B1.Run);
@@ -161,11 +163,11 @@ namespace IFT585_TP1
             Thread threadC = new Thread(C.Run);
 
             //easier to debug
-            threadA1.Name = "threadA1";
-            threadA2.Name = "threadA2";
-            threadB1.Name = "threadB1";
-            threadB2.Name = "threadB2";
-            threadC.Name = "threadC";
+            threadA1.Name = "A1_LLC";
+            threadA2.Name = "A2_MAC";
+            threadB1.Name = "B1_LLC";
+            threadB2.Name = "B2_MAC";
+            threadC.Name = "C_PHYS";
 
 
             all_threads.Add(threadA1);

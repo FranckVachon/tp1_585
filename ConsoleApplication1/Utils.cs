@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.IO;
+using System.Text;
 
 namespace IFT585_TP1
 {
@@ -25,8 +27,46 @@ namespace IFT585_TP1
         public const uint TIMEOUT = 1000;
         public const uint ACK_TIMEOUT = 1000;
 
-        public const TypeConsolePrint print_configuration = TypeConsolePrint.ReceptionPath;
+        public const TypeConsolePrint print_configuration = TypeConsolePrint.SendingPath;
+
+        public const string log_file_path = @"U:\hiver2018\ift585\tp1_liaison\log\log.txt";
+        public static readonly object _logObj = new Object();
     }
+
+    public static class Logging {
+
+        public static void log(TypeConsolePrint type, string str_to_print)
+        {
+            /*This methods filters what we want or not to print. Useful for debugging. */
+            if (type == Constants.print_configuration || Constants.print_configuration==TypeConsolePrint.All)
+            {
+                Console.WriteLine(str_to_print);
+
+                ReaderWriterLock locker = new ReaderWriterLock();
+
+                lock (Constants._logObj)
+                {
+                    using (StreamWriter sw = File.AppendText(Constants.log_file_path))
+                    {
+                        sw.Write(str_to_print);
+                        sw.Write(Environment.NewLine);
+                        sw.Close();
+                    }
+                }
+            }
+        }
+      
+        public static void createLogFile() {
+            using (StreamWriter sw = File.CreateText(Constants.log_file_path))
+            {
+                sw.Write("Debug from run on: " + DateTime.Now.ToString("h:mm:ss"));
+                sw.Close();
+            }
+        }
+    }
+
+  
+
 
     public enum TypeEvenement
         /*The various thing that can happen which would warrant some response from other threads. Kind of an observer pattern*/
@@ -35,14 +75,16 @@ namespace IFT585_TP1
         CkSumErr,
         Timeout,
         CoucheReseauPrete,
-        ACKTimeout
+        ACKTimeout,
+        PaquetRecu
     }
 
     public enum TypeConsolePrint
     { /*To decide what we actually print on the screen... based on what we want to know/debug*/
         ReceptionPath,
         SendingPath,
-        All
+        All,
+        Event
 
     }
 
@@ -94,6 +136,11 @@ namespace IFT585_TP1
             get { return _information; } 
             set { _information = value; } 
         }
+
+        public override string ToString()
+        {
+            return $"noSequence:{_noSeq}, _taille:{_taille}, _ack:{_ack}, _type:{_type}, _information:{_information}";
+        }
     }
 
     public class Paquet
@@ -115,5 +162,11 @@ namespace IFT585_TP1
 
         public uint Taille => _taille;
         public byte[] Buffer => _buffer;
+
+        public override string ToString()
+        {
+            
+            return $"{Encoding.Default.GetString(_buffer)}";
+        }
     }
 }

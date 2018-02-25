@@ -35,6 +35,22 @@ namespace IFT585_TP1
             this.m_physiqueStreamOut = new BlockingCollection<Trame>();
         }
 
+        public void envoie_trame(Trame completeFrame) {
+
+            string log_str = "envoie_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + completeFrame.NoSequence;
+            Logging.log(TypeConsolePrint.SendingPath, log_str);
+            m_physiqueStreamOut.Add(completeFrame);
+        }
+
+        public void reception_trame(Trame completeFrame)
+        {
+
+            string log_str = "reception_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + completeFrame.NoSequence;
+            Logging.log(TypeConsolePrint.ReceptionPath, log_str);
+            m_LLCStreamOut.Add(completeFrame);
+            m_evenementStream.Add(TypeEvenement.ArriveeTrame);
+        }
+
         public void Run()
         {
             while (true)
@@ -44,10 +60,9 @@ namespace IFT585_TP1
                 if (m_LLCStreamIn.TryTake(out completeFrame, 100))
                 {
                     /* Début de trame provenant de la sous-couche LLC */
-
                     // TO DO : Faire le traitement de la sous-couche MAC
+                    envoie_trame(completeFrame);
 
-                    m_physiqueStreamOut.Add(completeFrame);
                 }
 
 
@@ -56,9 +71,7 @@ namespace IFT585_TP1
                     /* Trame provenant de la couche physique */
 
                     // TO DO : Faire le traitement de la sous-couche MAC
-
-                    m_LLCStreamOut.Add(completeFrame);
-                    m_evenementStream.Add(TypeEvenement.ArriveeTrame);
+                    reception_trame(completeFrame);
 
                 }
             }
