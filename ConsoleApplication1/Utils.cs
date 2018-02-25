@@ -139,7 +139,7 @@ namespace IFT585_TP1
 
         public override string ToString()
         {
-            return $"noSequence:{_noSeq}, _taille:{_taille}, _ack:{_ack}, _type:{_type}, _information:{_information}";
+            return $"noSequence:{_noSeq}, _taille:{_taille},_type:{_type}, _information:{_information}";
         }
     }
 

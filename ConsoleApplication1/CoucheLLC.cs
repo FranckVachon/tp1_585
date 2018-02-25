@@ -482,7 +482,9 @@ namespace IFT585_TP1
                         if (temp_trame.Type == TypeTrame.data)
                         {
                             /* C'est une trame de données correctes */
-                            //?How do we know it's good? Check has been called where?
+                            /*This doesn't work. When we arrive at the end of the # of frames for that paquet (say, there are 4 frames in 
+                            total), then we send a NAK. However, tramaAttendue (#5 in this example) will simply never come as there are only
+                            4... or will the NAK simply be ignored then?*/
                             if ((temp_trame.NoSequence != trameAttendue) && noNAK)
                                 _envoyerTrame(TypeTrame.nak, 0, trameAttendue, outTampon);
                             else
