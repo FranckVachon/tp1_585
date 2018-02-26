@@ -27,7 +27,7 @@ namespace IFT585_TP1
         public const uint TIMEOUT = 1000;
         public const uint ACK_TIMEOUT = 1000;
 
-        public const TypeConsolePrint print_configuration = TypeConsolePrint.SendingPath;
+        public const TypeConsolePrint print_configuration = TypeConsolePrint.MACDEBUG;
 
         public const string log_file_path = @"U:\hiver2018\ift585\tp1_liaison\log\log.txt";
         public static readonly object _logObj = new Object();
@@ -59,7 +59,7 @@ namespace IFT585_TP1
         public static void createLogFile() {
             using (StreamWriter sw = File.CreateText(Constants.log_file_path))
             {
-                sw.Write("Debug from run on: " + DateTime.Now.ToString("h:mm:ss"));
+                sw.Write("Debug from run on: " + DateTime.Now.ToString("h:mm:ss") +  Environment.NewLine);
                 sw.Close();
             }
         }
@@ -84,7 +84,8 @@ namespace IFT585_TP1
         ReceptionPath,
         SendingPath,
         All,
-        Event
+        Event,
+        MACDEBUG
 
     }
 
@@ -100,6 +101,17 @@ namespace IFT585_TP1
         public Trame()
         {
             _taille = Constants.N;
+        }
+        public Trame(byte typeTrame, byte noSeq, byte[] data)
+        {
+            /*New constructor to  build a trame from its binrep coming form physical layer*/
+            _taille = Constants.N;
+            NoSequence = Convert.ToUInt32(noSeq);
+            Type = (TypeTrame)Convert.ToUInt32(typeTrame);
+            Paquet pq = new Paquet();
+            pq.Buffer = data;
+            Info = pq;
+
         }
 
         private uint _taille;
@@ -161,7 +173,16 @@ namespace IFT585_TP1
         }
 
         public uint Taille => _taille;
-        public byte[] Buffer => _buffer;
+        //public byte[] Buffer => _buffer;
+
+        public byte[] Buffer
+        {
+            get { return _buffer; }
+            set { _buffer = value; }
+        }
+
+
+
 
         public override string ToString()
         {
