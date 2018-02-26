@@ -67,6 +67,8 @@ namespace IFT585_TP1
 
         public string insert_hamming_codes(string binrep) {
             /*Will insert hamming codes in binrep here, returns a binrep including codes*/
+            //Recursive approach - Start with position 0, powers of 2 have check bits inserted
+
             return null;
         }
 
