@@ -7,14 +7,14 @@ namespace IFT585_TP1
 {
     public class CoucheMAC
     {
-        private BlockingCollection<Trame> m_physiqueStreamIn;
-        public BlockingCollection<Trame> PhysiqueStreamIn
+        private BlockingCollection<string> m_physiqueStreamIn;
+        public BlockingCollection<string> PhysiqueStreamIn
         {
             get { return m_physiqueStreamIn; }
         }
 
-        private BlockingCollection<Trame> m_physiqueStreamOut;
-        public BlockingCollection<Trame> PhysiqueStreamOut
+        private BlockingCollection<string> m_physiqueStreamOut;
+        public BlockingCollection<string> PhysiqueStreamOut
         {
             get { return m_physiqueStreamOut; }
         }
@@ -32,8 +32,8 @@ namespace IFT585_TP1
             this.m_LLCStreamIn = coucheLLC.MACStreamOut;
             this.m_LLCStreamOut = coucheLLC.MACStreamIn;
 
-            this.m_physiqueStreamIn = new BlockingCollection<Trame>();
-            this.m_physiqueStreamOut = new BlockingCollection<Trame>();
+            this.m_physiqueStreamIn = new BlockingCollection<string>();
+            this.m_physiqueStreamOut = new BlockingCollection<string>();
         }
 
         public void envoie_trame(Trame completeFrame) {
@@ -41,29 +41,33 @@ namespace IFT585_TP1
             string log_str = "envoie_trame T= " + Thread.CurrentThread.Name + " noTrame: " + completeFrame.NoSequence;
             Logging.log(TypeConsolePrint.SendingPath, log_str);
 
-
-
-            log_str = "Trame avan binrep: " + completeFrame.ToString() + Environment.NewLine;
-            Logging.log(TypeConsolePrint.MACDEBUG, log_str);
-
             //First, need to take the bytes[] from that frame and turn them into a series of 0101010101 strings we will be hamming on
             string binrep = bytes_to_bin_string(completeFrame);
 
-            Trame tr = binString_to_trame(binrep);
-            log_str = "Trame APRES binrep/reconvert: " + tr.ToString() + Environment.NewLine;
-            Logging.log(TypeConsolePrint.MACDEBUG, log_str);
-            //Then, feed that to hamming() to insert the control bits
 
-            m_physiqueStreamOut.Add(completeFrame);
+            //Call hamming - methode to be writtent
+            //string binrep_with_hamming = insert_hamming_codes(binrep);
+
+            //m_physiqueStreamOut.Add(completeFrame);
+            //testing my reconstructed frame from bin
+            m_physiqueStreamOut.Add(binrep);
+
         }
 
-        public void reception_trame(Trame completeFrame)
+        public void reception_trame(string binRep_of_trame)
         {
+            Trame dum = new Trame();
+            dum = binString_to_trame(binRep_of_trame);
+            m_LLCStreamOut.Add(dum);
 
-            string log_str = "reception_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + completeFrame.NoSequence;
+            string log_str = "reception_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + dum.NoSequence;
             Logging.log(TypeConsolePrint.ReceptionPath, log_str);
-            m_LLCStreamOut.Add(completeFrame);
             m_evenementStream.Add(TypeEvenement.ArriveeTrame);
+        }
+
+        public string insert_hamming_codes(string binrep) {
+            /*Will insert hamming codes in binrep here, returns a binrep including codes*/
+            return null;
         }
 
         public string bytes_to_bin_string(Trame tr)
@@ -102,9 +106,8 @@ namespace IFT585_TP1
                 trame_bytes[i] = Convert.ToByte(binRep.Substring(8 * i, 8), 2);
             }
 
-            //TO DO: add constructor to Trame(args)
-            Trame trame_from_binrep = new Trame(trame_bytes[0], trame_bytes[1], trame_bytes.Skip(2).Take(numBytes - 2).ToArray());
 
+            Trame trame_from_binrep = new Trame(trame_bytes[0], trame_bytes[1], trame_bytes.Skip(2).Take(numBytes - 2).ToArray());
 
             return trame_from_binrep;
 
@@ -124,13 +127,13 @@ namespace IFT585_TP1
 
                 }
 
-
-                if (m_physiqueStreamIn.TryTake(out completeFrame, 100))
+                string binRep_of_trame;
+                if (m_physiqueStreamIn.TryTake(out binRep_of_trame, 100))
                 {
-                    /* Trame provenant de la couche physique */
+                    /* Trame provenant de la couche physique - binrep */
 
                     // TO DO : Faire le traitement de la sous-couche MAC
-                    reception_trame(completeFrame);
+                    reception_trame(binRep_of_trame);
 
                 }
             }

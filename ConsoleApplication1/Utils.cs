@@ -30,14 +30,14 @@ namespace IFT585_TP1
         public const TypeConsolePrint print_configuration = TypeConsolePrint.MACDEBUG;
 
         public const string log_file_path = @"U:\hiver2018\ift585\tp1_liaison\log\log.txt";
-        public static readonly object _logObj = new Object();
+        public static readonly object _logObj = new Object();   //Pour gérer l'écriture de multiple threads sur le même fichier.
     }
 
     public static class Logging {
 
         public static void log(TypeConsolePrint type, string str_to_print)
         {
-            /*This methods filters what we want or not to print. Useful for debugging. */
+            /*This methods filters what we want or not to print. Useful for debugging. The lock managers the multithread acccess */
             if (type == Constants.print_configuration || Constants.print_configuration==TypeConsolePrint.All)
             {
                 Console.WriteLine(str_to_print);
@@ -102,12 +102,13 @@ namespace IFT585_TP1
         {
             _taille = Constants.N;
         }
-        public Trame(byte typeTrame, byte noSeq, byte[] data)
+        public Trame(byte noSeq, byte typeTrame, byte[] data)
         {
             /*New constructor to  build a trame from its binrep coming form physical layer*/
             _taille = Constants.N;
             NoSequence = Convert.ToUInt32(noSeq);
-            Type = (TypeTrame)Convert.ToUInt32(typeTrame);
+            TypeTrame ty = (TypeTrame)Convert.ToUInt32(typeTrame);
+            Type = ty;
             Paquet pq = new Paquet();
             pq.Buffer = data;
             Info = pq;
