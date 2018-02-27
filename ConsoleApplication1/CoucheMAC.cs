@@ -56,7 +56,7 @@ namespace IFT585_TP1
 
         public void reception_trame(string binRep_of_trame)
         {
-            Trame dum = new Trame();
+            Trame dum = new Trame(); 
             dum = binString_to_trame(binRep_of_trame);
             m_LLCStreamOut.Add(dum);
 
