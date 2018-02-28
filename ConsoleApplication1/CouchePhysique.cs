@@ -39,6 +39,13 @@ namespace IFT585_TP1
 
                     // TO DO : Faire les perturbations de la couche physique
 
+                    string log_str = "before bitflip" + new string(cArray);
+                    Logging.log(TypeConsolePrint.Hamming, log_str);
+                    cArray = induce_errors_cArray(cArray);
+                    log_str = "after bitflip" + new string(cArray);
+                    Logging.log(TypeConsolePrint.Hamming, log_str);
+                    //cArray = induce_errors_cArray(cArray);
+
                     m_B2StreamOut.Add(cArray);
                     //Logging
                     //string log_str = "streamout from T=" + Thread.CurrentThread.Name + " for frame: " + completeFrame.ToString();
@@ -58,6 +65,21 @@ namespace IFT585_TP1
                     //Logging.log(TypeConsolePrint.SendingPath, log_str);
                 }
             }
+        }
+
+        private char[] induce_errors_cArray(char[] cArray)
+        {
+            int bitToFlip = 100;
+            if (cArray[bitToFlip] =='1')
+            {
+                cArray[bitToFlip] = '0';
+            }
+            else
+            {
+                cArray[bitToFlip] = '1';
+
+            }
+            return cArray;
         }
     }
 }

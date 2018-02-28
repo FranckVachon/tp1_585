@@ -45,12 +45,10 @@ namespace IFT585_TP1
         public void envoie_trame(Trame completeFrame) {
 
             string log_str = "envoie_trame T= " + Thread.CurrentThread.Name + " noTrame: " + completeFrame.NoSequence;
-            Logging.log(TypeConsolePrint.SendingPath, log_str);
+            Logging.log(TypeConsolePrint.All, log_str);
 
             //First, need to take the bytes[] from that frame and turn them into a series of 0101010101 strings we will be hamming on
             string binrep = bytes_to_bin_string(completeFrame);
-            log_str = "length frame (bits): " + binrep.Length;
-            Logging.log(TypeConsolePrint.Hamming, log_str);
 
             //Call hamming - methode to be writtent
             char[] binrep_with_hamming = insert_hamming_codes(binrep);
@@ -74,7 +72,7 @@ namespace IFT585_TP1
             m_LLCStreamOut.Add(dum);
 
             string log_str = "reception_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + dum.NoSequence;
-            Logging.log(TypeConsolePrint.ReceptionPath, log_str);
+            Logging.log(TypeConsolePrint.All, log_str);
             m_evenementStream.Add(TypeEvenement.ArriveeTrame);
         }
 
@@ -95,16 +93,13 @@ namespace IFT585_TP1
                 }
             }
             cArray_data = li.ToArray();
-
+            /*
             string log_str = "removing_hamming_codes cArray_data: ";
-
-            foreach (char c in cArray_data)
-            {
-                log_str += c.ToString();
-            }
+            foreach (char c in cArray_data) {log_str += c.ToString();}
             log_str += Environment.NewLine;
-
             Logging.log(TypeConsolePrint.Hamming, log_str);
+            */
+
             return new string(cArray_data);
         }
 
@@ -142,23 +137,11 @@ namespace IFT585_TP1
                     cArray_total[i] = li[0];
                         li.RemoveAt(0);
                 }
-
-
                 //if !power_of_two(i+1), then take() next element from binrep and REMOVE IT until brinrep_as_charArray is full
             }
-
-
             //returning char[] since the receiver will need a char[] array for the hamming code as well
 
-            string log_str = "insert_hamming_codes cArray: ";
 
-            foreach (char c in cArray_total)
-            {
-                log_str += c.ToString();
-            }
-            log_str += Environment.NewLine;
-
-            Logging.log(TypeConsolePrint.Hamming, log_str);
             return cArray_total;
         }
 
