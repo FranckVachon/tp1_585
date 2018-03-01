@@ -60,7 +60,7 @@ namespace IFT585_TP1
                     // TO DO : Faire les perturbations de la couche physique
 
                     m_A2StreamOut.Add(cArray);
-                    //Logging
+                    //Logging 
                     //string log_str = "streamout from T=" + Thread.CurrentThread.Name + " for frame: " + completeFrame.ToString();
                     //Logging.log(TypeConsolePrint.SendingPath, log_str);
                 }
