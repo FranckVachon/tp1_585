@@ -8,11 +8,6 @@ namespace IFT585_TP1
 {
     public class CoucheMAC
     {
-
-        //now char[] instead of string, this is more efficient
-        //private BlockingCollection<string> m_physiqueStreamIn;
-        //public BlockingCollection<string> PhysiqueStreamIn
-
         private BlockingCollection<char[]> m_physiqueStreamIn;
         public BlockingCollection<char[]> PhysiqueStreamIn
         {
@@ -47,11 +42,8 @@ namespace IFT585_TP1
             string log_str = "envoie_trame T= " + Thread.CurrentThread.Name + " noTrame: " + completeFrame.NoSequence;
             Logging.log(TypeConsolePrint.All, log_str);
 
-            //First, need to take the bytes[] from that frame and turn them into a series of 0101010101 strings we will be hamming on
-            string binrep = bytes_to_bin_string(completeFrame);
-
-            //Call hamming - methode to be writtent
-            char[] binrep_with_hamming = insert_hamming_codes(binrep);
+            //First, need to take the bytes[] from that frame and turn them into a series of 0101010101 char[] we will be hamming on
+            char[] binrep_with_hamming = insert_hamming_codes(bytes_to_bin_string(completeFrame));
 
             m_physiqueStreamOut.Add(binrep_with_hamming);
 
@@ -59,33 +51,33 @@ namespace IFT585_TP1
 
         public void reception_trame(char[] cArray)
         {
-            //param is now char[] instead of string.  
             Trame dum = new Trame();
+            List<List<char>> vals = new List<List<char>>();
+        
+            //Removing the hamming codes from the message
+            vals = remove_hamming_bits(cArray);
 
-            //new function - check the hamming codes on cArray, returns a the conversion back into string
-            //then we can conver to a trame() again with the binRep (string version)
-            string binRep = remove_hamming_bits(cArray);
+            //Check if message is correct, correct errors there if not. This returns the corrected message
+            //or the same message if there was no error
+            char[] correct_charArray = check_hamming_reception(vals, cArray);
 
-            dum = binString_to_trame(binRep);
+            //the constructor in Trame class needs a string represenation to work
+            dum = binString_to_trame(new string(correct_charArray));
             m_LLCStreamOut.Add(dum);
 
-            //string log_str = "reception_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + dum.NoSequence;
-            string log_str = "receive " + new string(cArray);
-            //Logging.log(TypeConsolePrint.Hamming, log_str);
             m_evenementStream.Add(TypeEvenement.ArriveeTrame);
         }
 
-        public string remove_hamming_bits(char[] cArray)
+        public List<List<char>> remove_hamming_bits(char[] cArray)
         {
-            /*Receives c char array, returns cArray edited without hamming*/
+            /*Receives c char array, returns 1 list<char>. [0] contains the data without the hamming codes
+            [1] contains the hamming codes received  in the message so they can be checked*/
             int parity_bits = num_parity_bits(cArray.Length);
             char[] cArray_data = new char[cArray.Length - parity_bits];
 
-            List<char> li = new List<char>();
+            List<char> data = new List<char>();
             List<char> parity_list = new List<char>();
-
-            var test = check_hamming_reception(cArray);
-
+            List<List<char>> ret = new List<List<char>>();
 
             for (int i = 0; i < cArray.Length; i++)
             {
@@ -93,73 +85,105 @@ namespace IFT585_TP1
                 bool isPow = is_power_of_two(i + 1);
                 if (!isPow)
                 {
-                    li.Add(cArray[i]);
+                    data.Add(cArray[i]);
                 }
                 else
                 {
                     parity_list.Add(cArray[i]);
                 }
             }
-            cArray_data = li.ToArray();
 
-            string log_str = "hamDecodes " + new string(parity_list.ToArray());
-            Logging.log(TypeConsolePrint.Hamming, log_str);
-
-            return new string(cArray_data);
+            ret.Add(data);
+            ret.Add(parity_list);
+            return ret;
         }
 
-        public bool check_hamming_reception(char[] cArray)
+        public char[] check_hamming_reception(List<List<char>> li, char[] cArray_full)
         {
-            /*THIS MUST be called with parity bits still in*/
-            //string log_str = "check " + new string(cArray);
-            //Logging.log(TypeConsolePrint.Hamming, log_str);
+            /*Checks if the data (li[0]) matchs the parity bits (li[1])*/
 
+            List<char> parity_bits =  li[1];
+            List<char> data_bits = li[0];
+            List<List<char>> ret = new List<List<char>>();
+            char[] corrected_data;
+            string log_str = "";
 
-            //extract the parity bits
-            List<char> parity_bits = new List<char>();
-            for (int i = 0; Math.Pow(2, i) < cArray.Length; i++)
+            //Use data_bits to re-construct the hamming codes, as if we were sending the data again 
+            char[] cArray = insert_hamming_codes(new string(data_bits.ToArray()));
+            ret = remove_hamming_bits(cArray);
+
+            //the parity bits we just calculated should match those that came with the message, parity_bits
+            if (ret[1].SequenceEqual(parity_bits))
             {
-                int parity_bit_pos = Convert.ToInt32(Math.Pow(2, i));
-                parity_bits.Add(cArray[parity_bit_pos-1]);
-            }
-
-            //re-create parity bit list based on the data
-            List<char> l = new List<char>();
-            for (int i = 1; i <= cArray.Length; i++)
-            {
-                if (is_power_of_two(i))
-                {
-                    //we check the parity for those powers of 2
-                    char parity = check_parity(cArray, i);
-                    l.Add(parity);
-                }
-            }
-
-            //what we built should match what we extracted
-            string log_str = "extracte: " + new string(parity_bits.ToArray()) +  Environment.NewLine;
-            log_str += "checks ge: " + new string(l.ToArray());
-
-            Logging.log(TypeConsolePrint.Hamming, log_str);
-            if (parity_bits.Equals(l))
-            {
-  
+                //They are == meaning there was no error in the message
+                return data_bits.ToArray();
             }
             else
             {
+                //error detected - need to threat it
+                corrected_data = threat_error_detected(parity_bits, ret[1], cArray_full);
+                log_str = "parity1: " + new string(parity_bits.ToArray()) + Environment.NewLine;
+                //log_str += "allvect: " + new string(cArray) + Environment.NewLine;
+                log_str += "databfr: " + new string(data_bits.ToArray()) + Environment.NewLine;
+                log_str += "parity2: " + new string(ret[1].ToArray()) + Environment.NewLine;
+                log_str += "dataaft: " + new string(corrected_data) + Environment.NewLine;
+                Logging.log(TypeConsolePrint.Hamming, log_str);
+
+                return corrected_data;
 
             }
 
-            //string log_str = "hamDecodes " + new string(parity_list.ToArray());
-            //Logging.log(TypeConsolePrint.Hamming, log_str);
 
-            return false;
+        }
+
+        private char[] threat_error_detected(List<char> h1_bits, List<char> h2_bits, char[] cArray_full)
+        {
+            //First, get the syndrome - that' binary addition of parity of h1 (the parity bits that came with the message
+            //and h2 - the parity bits we recalculated. We add them in binary., then we reverse it.
+            //This happens (because of maths) to be the binary representation of the position of the mistake in the initial message
+            // ex: if syndrome == 00101, then that's 5 in binary, meaning the bit #5 in initial message, including the parity bit,
+            //was the error bit
+            string log_str;
+            char[] syndrome = new char[h1_bits.Count];
+
+            for (int i = 0; i < h1_bits.Count; i++)
+            {
+                if (h1_bits[i] == h2_bits[i])
+                {
+                    syndrome[i] = '0';
+                }
+                else
+                {
+                    syndrome[i] = '1';
+                }
+            }
+
+            Array.Reverse(syndrome);
+            string syndrome_string = new string(syndrome);
+            int pos_flipped_bit = Convert.ToInt32(syndrome_string,2)-1;
+
+            //now flipp that bit back
+            if (cArray_full[pos_flipped_bit]=='1')
+            {
+                cArray_full[pos_flipped_bit] = '0';
+            }
+            else
+            {
+                cArray_full[pos_flipped_bit] = '1';
+            }
+
+            char[] result = remove_hamming_bits(cArray_full)[0].ToArray();
+
+            log_str = "T= "+ Thread.CurrentThread.Name + "Corrected bit#:" + pos_flipped_bit + Environment.NewLine;
+            Logging.log(TypeConsolePrint.Finallog, log_str);
+
+            return result;
+
         }
 
         public char[] insert_hamming_codes(string binrep) {
             /*insert hamming codes in binrep, returns a binrep including codes*/
             /*We currently have 272 bits for data frames, and 16 bits for ack/nack. Means I need to somewhat account for that in hamming*/
-
-            //Assuming frames of 272 bits for now
 
             //Create a new array[n bits]
             int parity_bits = num_parity_bits(binrep.Length);
@@ -170,6 +194,8 @@ namespace IFT585_TP1
             //easier to use than the string
             char[] cArray_data = new char[binrep.Length];
             cArray_data = binrep.ToCharArray();
+
+
             List<char> li = cArray_data.ToList();
 
             for (int i = 1; i <= cArray_total.Length; i++)
@@ -202,13 +228,14 @@ namespace IFT585_TP1
                     cArray_total[i - 1] = parity;
                 }
             }
+
+            string log_str = "databef: " + binrep;
             //log_str += Environment.NewLine + "afterHam: " + new string(cArray_total);
-            //log_str += Environment.NewLine + "hamCodes: " + new string(l.ToArray());
+            log_str += Environment.NewLine + "hamCodes: " + new string(l.ToArray());
 
-            string log_str = Environment.NewLine + "hamCodes: " + new string(l.ToArray());
-            Logging.log(TypeConsolePrint.Hamming, log_str);
+            //string log_str = Environment.NewLine + "hamCodes: " + new string(l.ToArray());
+            //Logging.log(TypeConsolePrint.Hamming, log_str);
 
-            //returning char[] since the receiver will need a char[] array for the hamming code as well
             return cArray_total;
 
         }

@@ -27,7 +27,7 @@ namespace IFT585_TP1
         public const uint TIMEOUT = 1000;
         public const uint ACK_TIMEOUT = 1000;
 
-        public const TypeConsolePrint print_configuration = TypeConsolePrint.Hamming;
+        public const TypeConsolePrint print_configuration = TypeConsolePrint.Finallog;
 
         public const string log_file_path = @"U:\hiver2018\ift585\tp1_liaison\log\log.txt";
         public static readonly object _logObj = new Object();   //Pour gérer l'écriture de multiple threads sur le même fichier.
@@ -87,6 +87,7 @@ namespace IFT585_TP1
         Event,
         MACDEBUG,
         Hamming,
+        Finallog
 
     }
 

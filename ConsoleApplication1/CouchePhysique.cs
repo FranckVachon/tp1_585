@@ -38,9 +38,10 @@ namespace IFT585_TP1
                     /* Trame provenant de A */
 
                     // TO DO : Faire les perturbations de la couche physique
-
-                    //cArray = induce_errors_cArray(cArray);
-                    //log_str = "after " + new string(cArray);
+                    //string log_str = "befphy:  " + new string(cArray);
+                    //Logging.log(TypeConsolePrint.Hamming, log_str);
+                    cArray = induce_errors_cArray(cArray);
+                    //string log_str = "aftphy:  " + new string(cArray);
                     //Logging.log(TypeConsolePrint.Hamming, log_str);
 
                     m_B2StreamOut.Add(cArray);
@@ -65,7 +66,17 @@ namespace IFT585_TP1
 
         private char[] induce_errors_cArray(char[] cArray)
         {
-            int bitToFlip = 42;
+            //Génère aléatoirement des erreurs. environ 50% de chances de générer une erreur a chaque trame
+            Random rnd = new Random();
+            string log_str;
+            if (rnd.Next(1,10)>5)
+            {   //pas d'erreur généré
+                log_str = "T=" + Thread.CurrentThread.Name + Environment.NewLine + "No error bit: ";
+                Logging.log(TypeConsolePrint.Finallog, log_str);
+                return cArray;
+            }
+
+            int bitToFlip = rnd.Next(0, cArray.Length);
             if (cArray[bitToFlip] =='1')
             {
                 cArray[bitToFlip] = '0';
@@ -73,8 +84,10 @@ namespace IFT585_TP1
             else
             {
                 cArray[bitToFlip] = '1';
-
             }
+            log_str = "T=" + Thread.CurrentThread.Name + Environment.NewLine + "Error bit#: " + bitToFlip;
+            Logging.log(TypeConsolePrint.Finallog, log_str);
+
             return cArray;
         }
     }
