@@ -53,8 +53,6 @@ namespace IFT585_TP1
             //Call hamming - methode to be writtent
             char[] binrep_with_hamming = insert_hamming_codes(binrep);
 
-            //m_physiqueStreamOut.Add(completeFrame);
-            //testing my reconstructed frame from bin
             m_physiqueStreamOut.Add(binrep_with_hamming);
 
         }
@@ -71,17 +69,23 @@ namespace IFT585_TP1
             dum = binString_to_trame(binRep);
             m_LLCStreamOut.Add(dum);
 
-            string log_str = "reception_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + dum.NoSequence;
-            Logging.log(TypeConsolePrint.All, log_str);
+            //string log_str = "reception_trame from Thread.Name: " + Thread.CurrentThread.Name + " noTrame: " + dum.NoSequence;
+            string log_str = "receive " + new string(cArray);
+            //Logging.log(TypeConsolePrint.Hamming, log_str);
             m_evenementStream.Add(TypeEvenement.ArriveeTrame);
         }
 
         public string remove_hamming_bits(char[] cArray)
         {
-            /*Receives c char array, performs hamming, returns cArray edited without hamming*/
+            /*Receives c char array, returns cArray edited without hamming*/
             int parity_bits = num_parity_bits(cArray.Length);
             char[] cArray_data = new char[cArray.Length - parity_bits];
+
             List<char> li = new List<char>();
+            List<char> parity_list = new List<char>();
+
+            var test = check_hamming_reception(cArray);
+
 
             for (int i = 0; i < cArray.Length; i++)
             {
@@ -91,16 +95,64 @@ namespace IFT585_TP1
                 {
                     li.Add(cArray[i]);
                 }
+                else
+                {
+                    parity_list.Add(cArray[i]);
+                }
             }
             cArray_data = li.ToArray();
-            /*
-            string log_str = "removing_hamming_codes cArray_data: ";
-            foreach (char c in cArray_data) {log_str += c.ToString();}
-            log_str += Environment.NewLine;
+
+            string log_str = "hamDecodes " + new string(parity_list.ToArray());
             Logging.log(TypeConsolePrint.Hamming, log_str);
-            */
 
             return new string(cArray_data);
+        }
+
+        public bool check_hamming_reception(char[] cArray)
+        {
+            /*THIS MUST be called with parity bits still in*/
+            //string log_str = "check " + new string(cArray);
+            //Logging.log(TypeConsolePrint.Hamming, log_str);
+
+
+            //extract the parity bits
+            List<char> parity_bits = new List<char>();
+            for (int i = 0; Math.Pow(2, i) < cArray.Length; i++)
+            {
+                int parity_bit_pos = Convert.ToInt32(Math.Pow(2, i));
+                parity_bits.Add(cArray[parity_bit_pos-1]);
+            }
+
+            //re-create parity bit list based on the data
+            List<char> l = new List<char>();
+            for (int i = 1; i <= cArray.Length; i++)
+            {
+                if (is_power_of_two(i))
+                {
+                    //we check the parity for those powers of 2
+                    char parity = check_parity(cArray, i);
+                    l.Add(parity);
+                }
+            }
+
+            //what we built should match what we extracted
+            string log_str = "extracte: " + new string(parity_bits.ToArray()) +  Environment.NewLine;
+            log_str += "checks ge: " + new string(l.ToArray());
+
+            Logging.log(TypeConsolePrint.Hamming, log_str);
+            if (parity_bits.Equals(l))
+            {
+  
+            }
+            else
+            {
+
+            }
+
+            //string log_str = "hamDecodes " + new string(parity_list.ToArray());
+            //Logging.log(TypeConsolePrint.Hamming, log_str);
+
+            return false;
         }
 
         public char[] insert_hamming_codes(string binrep) {
@@ -120,29 +172,69 @@ namespace IFT585_TP1
             cArray_data = binrep.ToCharArray();
             List<char> li = cArray_data.ToList();
 
-            if (binrep.Length<100)
-            {
-                //
-            }
-
-            for (int i = 0; i < cArray_total.Length; i++)
+            for (int i = 1; i <= cArray_total.Length; i++)
             {
                 //each power of 2 is left blank = will be parity bits (1,2,4,8...)
-
-                //Check power:, i+1 since position for hamming is index 1, not 0
-                bool isPow = is_power_of_two(i+1);
+                bool isPow = is_power_of_two(i);
                 if (!isPow)
                 {
                     //there is no "l.pop(0)" apparently in c# - that's a bit disappointing
-                    cArray_total[i] = li[0];
+                    cArray_total[i-1] = li[0];
                         li.RemoveAt(0);
                 }
-                //if !power_of_two(i+1), then take() next element from binrep and REMOVE IT until brinrep_as_charArray is full
             }
+
+            //Yeah.... not the best to loop around it twice. It could really be optimized, but then 
+            //early optimization of details is the root of all evil. It would also require more brain juice
+            //than I have available right now.
+            //Calculate parity bits
+            //string log_str = "beforHam: " + new string(cArray_data) + Environment.NewLine;
+            //log_str += "mid- Ham: " + new string(cArray_total) + Environment.NewLine;
+
+            List<char> l = new List<char>();
+            for (int i = 1; i <= cArray_total.Length; i++)
+            {
+                if (is_power_of_two(i))
+                {
+                    //we check the parity for those powers of 2
+                    char parity = check_parity(cArray_total, i);
+                    l.Add(parity);
+                    cArray_total[i - 1] = parity;
+                }
+            }
+            //log_str += Environment.NewLine + "afterHam: " + new string(cArray_total);
+            //log_str += Environment.NewLine + "hamCodes: " + new string(l.ToArray());
+
+            string log_str = Environment.NewLine + "hamCodes: " + new string(l.ToArray());
+            Logging.log(TypeConsolePrint.Hamming, log_str);
+
             //returning char[] since the receiver will need a char[] array for the hamming code as well
-
-
             return cArray_total;
+
+        }
+
+
+
+        public char check_parity(char[] c, int index) {
+            /*Takes the char[] - full length, along with position, computes the parity bit value for that index, returns the char 1, or 0*/
+
+            int i = index;
+            int num_of_ones = 0;
+            while (i < c.Length)
+            {
+                int j = 0;  //this controls the "batch" number
+                while (j<index && i + j - 1 < c.Length)     //when j gets to index, this batch is done. Don't want array out of bounds though
+                {
+                    num_of_ones = c[i + j - 1] == '1' ? num_of_ones +=1 : num_of_ones;
+                    j++;
+                }
+
+                i += 2*index;      //we skip 1 batch - so we add twice the index value of the batch
+            }
+
+            //at this point num_of_ones gives us the parity
+
+            return (num_of_ones % 2).ToString().ToCharArray()[0];
         }
 
         public bool is_power_of_two(int x) {

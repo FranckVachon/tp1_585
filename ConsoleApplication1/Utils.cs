@@ -86,7 +86,7 @@ namespace IFT585_TP1
         All,
         Event,
         MACDEBUG,
-        Hamming
+        Hamming,
 
     }
 
